@@ -4,7 +4,7 @@ name: qBittorrent VPN
 tagline: qBittorrent locked behind a PIA VPN tunnel (Gluetun)
 icon: https://getumbrel.github.io/umbrel-apps-gallery/qbittorrent/icon.svg
 category: networking
-version: "1.0.2"
+version: "1.0.3"
 port: 8094
 description: >-
   qBittorrent running inside Gluetun's network namespace. All torrent traffic
