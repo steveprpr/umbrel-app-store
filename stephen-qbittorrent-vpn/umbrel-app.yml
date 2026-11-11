@@ -4,7 +4,7 @@ name: qBittorrent VPN
 tagline: qBittorrent locked behind a PIA VPN tunnel (Gluetun)
 icon: https://getumbrel.github.io/umbrel-apps-gallery/qbittorrent/icon.svg
 category: networking
-version: "1.0.0"
+version: "1.0.1"
 port: 8094
 description: >-
   qBittorrent running inside Gluetun's network namespace. All torrent traffic
@@ -12,8 +12,9 @@ description: >-
   if the tunnel drops, Gluetun's firewall blocks all traffic (kill switch).
 
 
-  Before first start, create the PIA credential files in this app's data
-  folder: secrets/openvpn_user and secrets/openvpn_password (mode 600).
+  Before first start, create the PIA credential files at
+  /home/umbrel/umbrel/secrets/pia/openvpn_user and openvpn_password
+  (root-owned, mode 600). They sit outside app-data so a reinstall keeps them.
 
 
   Downloads go to the shared Umbrel Downloads folder at /downloads, the same

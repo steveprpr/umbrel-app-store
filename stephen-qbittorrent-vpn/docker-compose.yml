@@ -29,7 +29,8 @@ services:
       - TZ=America/New_York
     volumes:
       - ${APP_DATA_DIR}/gluetun:/gluetun
-      - ${APP_DATA_DIR}/secrets:/run/secrets:ro
+      # PIA credentials live outside app-data so reinstall/uninstall can't wipe them.
+      - ${UMBREL_ROOT}/secrets/pia:/run/secrets:ro
       # Blocks NEW connections from the tunnel namespace to any private range
       # (Docker gateway, Home Assistant on host network, LAN). Replies still flow.
       - ${APP_DATA_DIR}/iptables:/iptables:ro
@@ -37,9 +38,9 @@ services:
   qbittorrent:
     image: lscr.io/linuxserver/qbittorrent:latest
     network_mode: "service:gluetun"
+    # service_started (not healthy) so install never stalls; Gluetun's firewall is up before the tunnel.
     depends_on:
-      gluetun:
-        condition: service_healthy
+      - gluetun
     restart: on-failure
     environment:
       - PUID=1000
