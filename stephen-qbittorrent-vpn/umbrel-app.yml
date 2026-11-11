@@ -1,0 +1,33 @@
+manifestVersion: 1
+id: stephen-qbittorrent-vpn
+name: qBittorrent VPN
+tagline: qBittorrent locked behind a PIA VPN tunnel (Gluetun)
+icon: https://getumbrel.github.io/umbrel-apps-gallery/qbittorrent/icon.svg
+category: networking
+version: "1.0.0"
+port: 8094
+description: >-
+  qBittorrent running inside Gluetun's network namespace. All torrent traffic
+  leaves through a Private Internet Access OpenVPN tunnel with port forwarding;
+  if the tunnel drops, Gluetun's firewall blocks all traffic (kill switch).
+
+
+  Before first start, create the PIA credential files in this app's data
+  folder: secrets/openvpn_user and secrets/openvpn_password (mode 600).
+
+
+  Downloads go to the shared Umbrel Downloads folder at /downloads, the same
+  path Sonarr, Radarr, Jellyfin and Bazarr use, so hardlinks work.
+developer: Stephen
+website: https://github.com/qdm12/gluetun
+submitter: Stephen
+submission: ""
+repo: https://github.com/qdm12/gluetun
+support: https://github.com/qdm12/gluetun/discussions
+gallery: []
+releaseNotes: >-
+  Initial release.
+dependencies: []
+path: ""
+defaultUsername: "admin"
+defaultPassword: "See the qbittorrent container log for the temporary password on first start"
