@@ -16,6 +16,4 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/config:/config
       - ${UMBREL_ROOT}/data/storage/downloads:/downloads
-      # Temporary, read-only: second pass for the USB 'temp' folder before the drive is reformatted.
-      - "${UMBREL_ROOT}/external/WD USB/Torrents:/usb:ro"
     restart: on-failure
