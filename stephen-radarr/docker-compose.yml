@@ -16,4 +16,10 @@ services:
     volumes:
       - ${APP_DATA_DIR}/data/config:/config
       - ${UMBREL_ROOT}/data/storage/downloads:/downloads
+      # Overflow library on the WD USB drive (ext4). Not auto-created: if the drive is missing, the app will not start rather than write to the internal disk.
+      - type: bind
+        source: "${UMBREL_ROOT}/external/WD USB/Media Archive"
+        target: /archive
+        bind:
+          create_host_path: false
     restart: on-failure
