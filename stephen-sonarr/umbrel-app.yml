@@ -1,0 +1,25 @@
+manifestVersion: 1
+id: stephen-sonarr
+name: Sonarr
+tagline: Smart PVR for TV shows (no Transmission dependency)
+icon: https://getumbrel.github.io/umbrel-apps-gallery/sonarr/icon.svg
+category: media
+version: "4.0.20"
+port: 8989
+description: >-
+  Sonarr packaged without Umbrel's Transmission dependency and media-app-configurator,
+  so the only download client is the VPN-locked qBittorrent (stephen-qbittorrent-vpn).
+  Same pinned image as the official Umbrel app; downloads folder mounted at /downloads.
+developer: Sonarr
+website: https://sonarr.tv/
+submitter: Stephen
+submission: ""
+repo: https://github.com/Sonarr/Sonarr
+support: https://github.com/Sonarr/Sonarr/issues
+gallery: []
+releaseNotes: >-
+  Initial release, matching Umbrel App Store version 4.0.20.
+dependencies: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""

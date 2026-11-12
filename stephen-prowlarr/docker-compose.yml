@@ -1,0 +1,19 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: stephen-prowlarr_server_1
+      APP_PORT: 9696
+      PROXY_AUTH_WHITELIST: "/api/*"
+
+  server:
+    image: linuxserver/prowlarr:version-2.7.0.5723@sha256:04be30163fbaf48d6aeee7b5893c9f6614ffbad6d853971df0d6dcdf01c7f104
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=America/New_York
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/config
+      - ${UMBREL_ROOT}/data/storage/downloads:/downloads
+    restart: on-failure

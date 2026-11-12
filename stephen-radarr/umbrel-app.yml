@@ -1,0 +1,25 @@
+manifestVersion: 1
+id: stephen-radarr
+name: Radarr
+tagline: Movie collection manager (no Transmission dependency)
+icon: https://getumbrel.github.io/umbrel-apps-gallery/radarr/icon.svg
+category: media
+version: "6.4.4"
+port: 7878
+description: >-
+  Radarr packaged without Umbrel's Transmission dependency and media-app-configurator,
+  so the only download client is the VPN-locked qBittorrent (stephen-qbittorrent-vpn).
+  Same pinned image as the official Umbrel app; downloads folder mounted at /downloads.
+developer: Radarr
+website: https://radarr.video/
+submitter: Stephen
+submission: ""
+repo: https://github.com/Radarr/Radarr
+support: https://github.com/Radarr/Radarr/issues
+gallery: []
+releaseNotes: >-
+  Initial release, matching Umbrel App Store version 6.4.4.
+dependencies: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""

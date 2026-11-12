@@ -1,0 +1,25 @@
+manifestVersion: 1
+id: stephen-prowlarr
+name: Prowlarr
+tagline: Indexer manager for Sonarr and Radarr (no Transmission dependency)
+icon: https://getumbrel.github.io/umbrel-apps-gallery/prowlarr/icon.svg
+category: media
+version: "2.7.0.5723"
+port: 9696
+description: >-
+  Prowlarr packaged without Umbrel's Transmission dependency and media-app-configurator,
+  so the only download client is the VPN-locked qBittorrent (stephen-qbittorrent-vpn).
+  Same pinned image as the official Umbrel app; downloads folder mounted at /downloads.
+developer: Prowlarr
+website: https://prowlarr.com/
+submitter: Stephen
+submission: ""
+repo: https://github.com/Prowlarr/Prowlarr
+support: https://github.com/Prowlarr/Prowlarr/issues
+gallery: []
+releaseNotes: >-
+  Initial release, matching Umbrel App Store version 2.7.0.5723.
+dependencies: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
