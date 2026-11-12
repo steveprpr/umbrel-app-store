@@ -4,7 +4,7 @@ name: Radarr
 tagline: Movie collection manager (no Transmission dependency)
 icon: https://getumbrel.github.io/umbrel-apps-gallery/radarr/icon.svg
 category: media
-version: "6.4.4"
+version: "6.4.4-1"
 port: 7878
 description: >-
   Radarr packaged without Umbrel's Transmission dependency and media-app-configurator,
