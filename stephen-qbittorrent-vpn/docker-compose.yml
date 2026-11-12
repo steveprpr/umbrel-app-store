@@ -29,7 +29,11 @@ services:
       - VPN_PORT_FORWARDING_UP_COMMAND=/bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":{{PORT}},\"current_network_interface\":\"{{VPN_INTERFACE}}\",\"random_port\":false,\"upnp\":false}" http://127.0.0.1:8090/api/v2/app/setPreferences'
       - VPN_PORT_FORWARDING_DOWN_COMMAND=/bin/sh -c 'wget -O- -nv --retry-connrefused --post-data "json={\"listen_port\":0,\"current_network_interface\":\"lo\"}" http://127.0.0.1:8090/api/v2/app/setPreferences'
       # Web UI reached only through Umbrel's app proxy and by Sonarr/Radarr on the Docker network.
-      - FIREWALL_INPUT_PORTS=8090
+      # 8090 qBittorrent UI, 8888 HTTP proxy (Prowlarr), 8191 FlareSolverr: reachable from the Docker network only.
+      - FIREWALL_INPUT_PORTS=8090,8888,8191
+      # HTTP proxy so Prowlarr's indexer searches also leave via PIA.
+      - HTTPPROXY=on
+      - HTTPPROXY_LOG=off
       - TZ=America/New_York
     volumes:
       - ${APP_DATA_DIR}/gluetun:/gluetun
@@ -55,3 +59,14 @@ services:
     volumes:
       - ${APP_DATA_DIR}/qbittorrent:/config
       - ${UMBREL_ROOT}/data/storage/downloads:/downloads
+
+  flaresolverr:
+    image: flaresolverr/flaresolverr:v3.4.6@sha256:7962759d99d7e125e108e0f5e7f3cdbcd36161776d058d1d9b7153b92ef1af9e
+    # Cloudflare solver for 1337x, inside the VPN namespace like qBittorrent.
+    network_mode: "service:gluetun"
+    depends_on:
+      - gluetun
+    restart: on-failure
+    environment:
+      - LOG_LEVEL=info
+      - TZ=America/New_York
