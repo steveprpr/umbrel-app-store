@@ -5,7 +5,7 @@ services:
     environment:
       APP_HOST: stephen-media-archiver_server_1
       APP_PORT: 8080
-      PROXY_AUTH_WHITELIST: "/api/status,/health"
+      PROXY_AUTH_WHITELIST: "/api/status,/api/metrics,/metrics,/health"
 
   server:
     image: python:3.12-alpine
@@ -17,7 +17,7 @@ services:
       - DRY_RUN=true
       - TRIGGER_FREE_GB=300
       - TARGET_FREE_GB=400
-      - MAX_GB_PER_RUN=200
+      - MAX_GB_PER_RUN=40
       - ARCHIVE_RESERVE_GB=150
       - MOVIE_MIN_DAYS=60
       - SERIES_MIN_DAYS=90

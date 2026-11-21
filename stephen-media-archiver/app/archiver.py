@@ -30,7 +30,7 @@ def env(name, default):
 DRY_RUN = env("DRY_RUN", "true").lower() != "false"
 TRIGGER_FREE_GB = float(env("TRIGGER_FREE_GB", "300"))
 TARGET_FREE_GB = float(env("TARGET_FREE_GB", "400"))
-MAX_GB_PER_RUN = float(env("MAX_GB_PER_RUN", "200"))
+MAX_GB_PER_RUN = float(env("MAX_GB_PER_RUN", "40"))
 ARCHIVE_RESERVE_GB = float(env("ARCHIVE_RESERVE_GB", "150"))
 MOVIE_MIN_DAYS = int(env("MOVIE_MIN_DAYS", "60"))
 SERIES_MIN_DAYS = int(env("SERIES_MIN_DAYS", "90"))
@@ -318,18 +318,46 @@ def plan(radarr, sonarr, watch, now, report):
     return cands
 
 
-def wait_moved(arr, kind, cid, report, timeout=4 * 3600):
+MOVE_CMDS = ("MoveMovie", "MoveSeries", "BulkMoveMovie", "BulkMoveSeries")
+
+
+def moves_running(arr):
+    return [c for c in arr.get("command") if c.get("status") in ("queued", "started")
+            and c.get("name") in MOVE_CMDS]
+
+
+def wait_moved(arr, kind, cid, old_path, archive_root, report, timeout=12 * 3600):
+    """Wait for the move command to finish, then make sure the app's path points at the archive.
+
+    Seen on 2026-11-21 (Chuck): Sonarr moved every file but kept the old series path.
+    If that happens and the files are at the destination, set the path without moving."""
+    ep = "movie" if kind == "movie" else "series"
     t0 = time.time()
-    while time.time() - t0 < timeout:
-        time.sleep(30)
-        obj = arr.get(f"{'movie' if kind == 'movie' else 'series'}/{cid}")
-        path = obj.get("path", "")
-        if path.startswith("/archive/"):
-            busy = [c for c in arr.get("command") if c.get("status") in ("queued", "started")
-                    and c.get("name") in ("MoveMovie", "MoveSeries", "BulkMoveMovie", "BulkMoveSeries")]
-            if not busy:
-                return obj
-    raise RuntimeError("move did not finish in time")
+    time.sleep(30)
+    while moves_running(arr):
+        if time.time() - t0 > timeout:
+            raise RuntimeError("move did not finish in time")
+        time.sleep(60)
+    obj = arr.get(f"{ep}/{cid}")
+    if obj.get("path", "").startswith("/archive/"):
+        return obj
+    dest = archive_root.rstrip("/") + "/" + os.path.basename(old_path.rstrip("/"))
+    listing = arr.get("filesystem?includeFiles=true&path=" + urllib.parse.quote(dest + "/"))
+    has_files = bool(listing.get("files")) or bool(listing.get("directories"))
+    src = arr.get("filesystem?includeFiles=true&path=" + urllib.parse.quote(old_path.rstrip("/") + "/"))
+    src_files = len(src.get("files", [])) + sum(
+        len(arr.get("filesystem?includeFiles=true&path=" + urllib.parse.quote(d["path"])).get("files", []))
+        for d in src.get("directories", []))
+    if not has_files or src_files:
+        raise RuntimeError(f"move incomplete: dest has files={has_files}, source still has {src_files} files")
+    log(report, f"  {ep} path not updated by the app; setting it to {dest} (files already there)")
+    obj["path"] = dest
+    obj["rootFolderPath"] = archive_root.rstrip("/") + "/"
+    arr.put(f"{ep}/{cid}?moveFiles=false", obj)
+    arr.post("command", {"name": "RescanMovie", "movieId": cid} if kind == "movie"
+             else {"name": "RescanSeries", "seriesId": cid})
+    time.sleep(30)
+    return arr.get(f"{ep}/{cid}")
 
 
 def restore_watch(jf, old_new_paths, watch, report):
@@ -406,6 +434,9 @@ def run_job(trigger="schedule"):
         report.update(internal_free_gb=round(free), archive_free_gb=round(arch_free))
         log(report, f"Internal free {free:.0f} GB (trigger {TRIGGER_FREE_GB:.0f}), archive free {arch_free:.0f} GB")
 
+        if moves_running(radarr) or moves_running(sonarr):
+            log(report, "A Radarr/Sonarr move is already running; skipping tonight")
+            return
         watch = snapshot_watch(jf, report)
         cands = plan(radarr, sonarr, watch, now, report)
         report["candidates"] = cands
@@ -441,17 +472,19 @@ def run_job(trigger="schedule"):
             if c["kind"] == "movie":
                 before = radarr.get(f"moviefile?movieId={c['id']}")
                 old_paths = [jf_path(f["path"]) for f in before]
+                old_dir = radarr.get(f"movie/{c['id']}")["path"]
                 radarr.put("movie/editor", {"movieIds": [c["id"]], "rootFolderPath": ARR_ARCHIVE_MOVIES,
                                             "moveFiles": True})
-                wait_moved(radarr, "movie", c["id"], report)
+                wait_moved(radarr, "movie", c["id"], old_dir, ARR_ARCHIVE_MOVIES, report)
                 after = radarr.get(f"moviefile?movieId={c['id']}")
                 new_paths = [jf_path(f["path"]) for f in after]
             else:
                 before = sonarr.get(f"episodefile?seriesId={c['id']}")
                 ids_old = {f["id"]: jf_path(f["path"]) for f in before}
+                old_dir = sonarr.get(f"series/{c['id']}")["path"]
                 sonarr.put("series/editor", {"seriesIds": [c["id"]], "rootFolderPath": ARR_ARCHIVE_TV,
                                              "moveFiles": True})
-                wait_moved(sonarr, "series", c["id"], report)
+                wait_moved(sonarr, "series", c["id"], old_dir, ARR_ARCHIVE_TV, report)
                 after = sonarr.get(f"episodefile?seriesId={c['id']}")
                 ids_new = {f["id"]: jf_path(f["path"]) for f in after}
                 old_paths = [ids_old[i] for i in ids_old if i in ids_new]
@@ -491,6 +524,53 @@ def scheduler():
         state["next_run"] = t.isoformat(timespec="minutes")
         time.sleep(max(1, (t - dt.datetime.now()).total_seconds()))
         run_job("schedule")
+
+
+# ---------- metrics for Home Assistant ----------
+
+_metrics_cache = {"t": 0, "data": None}
+
+
+def collect_metrics():
+    if _metrics_cache["data"] and time.time() - _metrics_cache["t"] < 60:
+        return _metrics_cache["data"]
+    m = {"ok": True, "error": ""}
+    try:
+        radarr = Arr(RADARR_URL, read_xml_key(RADARR_CONFIG))
+        sonarr = Arr(SONARR_URL, read_xml_key(SONARR_CONFIG))
+        for d in radarr.get("diskspace"):
+            key = {"/downloads": "internal", "/archive": "archive"}.get(d["path"])
+            if key:
+                tot = d["totalSpace"] or 1
+                m[f"{key}_free_gb"] = round(d["freeSpace"] / GB)
+                m[f"{key}_total_gb"] = round(tot / GB)
+                m[f"{key}_used_pct"] = round(100 * (1 - d["freeSpace"] / tot), 1)
+        for name, arr in (("sonarr", sonarr), ("radarr", radarr)):
+            health = arr.get("health")
+            m[f"{name}_warnings"] = len(health)
+            m[f"{name}_warning_text"] = "; ".join(h.get("message", "")[:120] for h in health)[:250] or "none"
+            q = arr.get("queue?pageSize=500")
+            recs = q.get("records", [])
+            m[f"{name}_queue"] = q.get("totalRecords", len(recs))
+            m[f"{name}_queue_stuck"] = sum(1 for r in recs if r.get("trackedDownloadStatus") in ("warning", "error"))
+        m["moves_running"] = len(moves_running(radarr)) + len(moves_running(sonarr))
+    except Exception as e:
+        m["ok"], m["error"] = False, str(e)[:200]
+    last = state.get("last") or {}
+    m["dry_run"] = DRY_RUN
+    m["last_run"] = (last.get("started") or "")[:16].replace("T", " ")
+    m["last_run_error"] = last.get("error") or "none"
+    m["last_run_moved"] = len(last.get("moved", []))
+    m["last_run_eligible"] = sum(1 for c in last.get("candidates", []) if c.get("eligible"))
+    _metrics_cache.update(t=time.time(), data=m)
+    return m
+
+
+def render_metrics():
+    m = collect_metrics()
+    rows = "".join(f'<tr><td>{html.escape(k)}</td><td id="{html.escape(k)}">{html.escape(str(v))}</td></tr>'
+                   for k, v in m.items())
+    return f"<!doctype html><html><head><meta charset='utf-8'><title>metrics</title></head><body><table>{rows}</table></body></html>"
 
 
 # ---------- status page ----------
@@ -546,6 +626,10 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, json.dumps({"dry_run": DRY_RUN, "running": state["running"],
                                         "next_run": state["next_run"], "last": state["last"]}, default=str),
                        "application/json")
+        elif self.path.rstrip("/").endswith("/api/metrics"):
+            self._send(200, json.dumps(collect_metrics()), "application/json")
+        elif self.path.rstrip("/").endswith("/metrics"):
+            self._send(200, render_metrics())
         elif self.path.rstrip("/").endswith("/health"):
             self._send(200, "OK", "text/plain")
         else:
