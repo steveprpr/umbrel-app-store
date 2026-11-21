@@ -1,0 +1,36 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: stephen-media-archiver_server_1
+      APP_PORT: 8080
+      PROXY_AUTH_WHITELIST: "/api/status,/health"
+
+  server:
+    image: python:3.12-alpine
+    restart: on-failure
+    command: ["python", "-u", "/app/archiver.py"]
+    environment:
+      - TZ=America/New_York
+      # Plans and reports only. Set to "false" (and bump the app version) to let it move files.
+      - DRY_RUN=true
+      - TRIGGER_FREE_GB=300
+      - TARGET_FREE_GB=400
+      - MAX_GB_PER_RUN=200
+      - ARCHIVE_RESERVE_GB=150
+      - MOVIE_MIN_DAYS=60
+      - SERIES_MIN_DAYS=90
+      - KEEP_TAG=keep
+      - RUN_AT=03:30
+    volumes:
+      - ${APP_DATA_DIR}/app:/app:ro
+      - ${APP_DATA_DIR}/data:/data
+      # Read-only: lets it check hardlink counts, so it knows what a move really frees.
+      - ${UMBREL_ROOT}/data/storage/downloads:/downloads:ro
+      # API keys are read from each app's own config, so no secrets live in this repo.
+      - ${UMBREL_ROOT}/app-data/stephen-radarr/data/config/config.xml:/keys/radarr/config.xml:ro
+      - ${UMBREL_ROOT}/app-data/stephen-sonarr/data/config/config.xml:/keys/sonarr/config.xml:ro
+      - ${UMBREL_ROOT}/app-data/bazarr/data/config/config/config.yaml:/keys/bazarr/config.yaml:ro
+      # Jellyfin key "media-archiver" is read from a temp copy of Jellyfin's database.
+      - ${UMBREL_ROOT}/app-data/jellyfin/data/config/data/data:/keys/jellyfin:ro

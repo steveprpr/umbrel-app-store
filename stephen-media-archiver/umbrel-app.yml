@@ -1,0 +1,31 @@
+manifestVersion: 1
+id: stephen-media-archiver
+name: Media Archiver
+tagline: Moves idle movies and shows to the USB archive, keeping watch status
+icon: https://getumbrel.github.io/umbrel-apps-gallery/radarr/icon.svg
+category: media
+version: "0.1.0"
+port: 8787
+description: >-
+  Nightly job for Stephen's media stack. When the internal drive runs low, it picks
+  movies and ended series nobody has watched recently, fetches subtitles through Bazarr,
+  asks Radarr/Sonarr to move them to the WD USB Media Archive (/archive), then restores
+  each Jellyfin user's watched and resume status. Starts in dry-run mode: it only reports
+  what it would move. Status page shows the last run and every title's status.
+  Tag a movie or series "keep" in Radarr/Sonarr to exclude it.
+developer: Stephen
+website: ""
+submitter: Stephen
+submission: ""
+repo: https://github.com/steveprpr/umbrel-app-store
+support: https://github.com/steveprpr/umbrel-app-store/issues
+gallery: []
+releaseNotes: >-
+  First version, dry run only.
+dependencies:
+  - stephen-radarr
+  - stephen-sonarr
+  - jellyfin
+path: ""
+defaultUsername: ""
+defaultPassword: ""
