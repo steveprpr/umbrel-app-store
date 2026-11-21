@@ -24,7 +24,7 @@ services:
       - KEEP_TAG=keep
       - RUN_AT=03:30
     volumes:
-      - ${APP_DATA_DIR}/app:/app:ro
+      - ${APP_DATA_DIR}/app-0.2.1:/app:ro   # versioned: Umbrel updates do not overwrite existing app files
       - ${APP_DATA_DIR}/data:/data
       # Read-only: lets it check hardlink counts, so it knows what a move really frees.
       - ${UMBREL_ROOT}/data/storage/downloads:/downloads:ro

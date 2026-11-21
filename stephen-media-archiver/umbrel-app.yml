@@ -4,7 +4,7 @@ name: Media Archiver
 tagline: Moves idle movies and shows to the USB archive, keeping watch status
 icon: https://getumbrel.github.io/umbrel-apps-gallery/radarr/icon.svg
 category: media
-version: "0.2.0"
+version: "0.2.1"
 port: 8787
 description: >-
   Nightly job for Stephen's media stack. When the internal drive runs low, it picks
@@ -21,7 +21,7 @@ repo: https://github.com/steveprpr/umbrel-app-store
 support: https://github.com/steveprpr/umbrel-app-store/issues
 gallery: []
 releaseNotes: >-
-  0.2.0: /metrics page for Home Assistant (disk space, Sonarr/Radarr health and queues); after a move, fixes the app path if Radarr/Sonarr left it pointing at the old folder; skips a night while a move is running; nightly limit 40 GB (USB is ~2 MB/s). Still dry run.
+  0.2.1: code moved to a versioned folder so updates actually ship (Umbrel keeps old app files); URLs with query strings fixed. 0.2.0: /metrics page for Home Assistant (disk space, Sonarr/Radarr health and queues); after a move, fixes the app path if Radarr/Sonarr left it pointing at the old folder; skips a night while a move is running; nightly limit 40 GB (USB is ~2 MB/s). Still dry run.
 dependencies:
   - stephen-radarr
   - stephen-sonarr

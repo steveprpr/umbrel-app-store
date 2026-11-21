@@ -37,6 +37,7 @@ SERIES_MIN_DAYS = int(env("SERIES_MIN_DAYS", "90"))
 KEEP_TAG = env("KEEP_TAG", "keep").lower()
 RUN_AT = env("RUN_AT", "03:30")
 PORT = int(env("PORT", "8080"))
+VERSION = "0.2.1"
 
 RADARR_URL = env("RADARR_URL", "http://stephen-radarr_server_1:7878")
 SONARR_URL = env("SONARR_URL", "http://stephen-sonarr_server_1:8989")
@@ -588,7 +589,7 @@ body{{font:15px system-ui,sans-serif;margin:16px;max-width:980px;color:#222}}
 table{{border-collapse:collapse;width:100%;font-size:13px}}td,th{{border-bottom:1px solid #ddd;padding:4px 6px;text-align:left}}
 .ok{{color:#176c2e}}.no{{color:#888}}.err{{color:#b00020}}pre{{background:#f4f4f4;padding:8px;white-space:pre-wrap;font-size:12px}}
 button{{font-size:15px;padding:6px 12px}}</style></head><body>
-<h2>Media Archiver</h2><p><b>Mode:</b> {mode}<br><b>Rules:</b> act when internal free &lt; {TRIGGER_FREE_GB:.0f} GB, free up to {TARGET_FREE_GB:.0f} GB,
+<h2>Media Archiver <small style="color:#888">v{VERSION}</small></h2><p><b>Mode:</b> {mode}<br><b>Rules:</b> act when internal free &lt; {TRIGGER_FREE_GB:.0f} GB, free up to {TARGET_FREE_GB:.0f} GB,
 max {MAX_GB_PER_RUN:.0f} GB/night; movies idle &ge; {MOVIE_MIN_DAYS} days; ended series idle &ge; {SERIES_MIN_DAYS} days;
 tag <code>{html.escape(KEEP_TAG)}</code> in Radarr/Sonarr = never archive.<br>
 <b>Next scheduled run:</b> {state.get('next_run') or '-'} {'<b>(running now)</b>' if state['running'] else ''}</p>
@@ -622,6 +623,7 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(b)
 
     def do_GET(self):
+        self.path = self.path.split("?", 1)[0]
         if self.path.rstrip("/").endswith("/api/status"):
             self._send(200, json.dumps({"dry_run": DRY_RUN, "running": state["running"],
                                         "next_run": state["next_run"], "last": state["last"]}, default=str),
@@ -636,6 +638,7 @@ class Handler(BaseHTTPRequestHandler):
             self._send(200, render())
 
     def do_POST(self):
+        self.path = self.path.split("?", 1)[0]
         if self.path.rstrip("/").endswith("run"):
             threading.Thread(target=run_job, args=("manual",), daemon=True).start()
             time.sleep(1)
