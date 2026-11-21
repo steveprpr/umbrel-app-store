@@ -10,7 +10,17 @@ services:
   server:
     image: python:3.12-alpine
     restart: on-failure
-    command: ["python", "-u", "/app/archiver.py"]
+    # Umbrel updates replace only this compose file and the manifest, never app/ files, so each
+    # version fetches its script from this repo at a pinned commit and checks its SHA-256.
+    # If GitHub can't be reached, it falls back to the copy installed in app/ (may be older).
+    command:
+      - sh
+      - -c
+      - >-
+        if wget -qO /tmp/archiver.py "https://raw.githubusercontent.com/steveprpr/umbrel-app-store/31390ab5841a113021cb6225e56123f054da902e/stephen-media-archiver/app/archiver.py"
+        && echo "ca88bf943dcac0628025110d8f6ed998693ce67a97466fe343071b6af46c91f4  /tmp/archiver.py" | sha256sum -c - >/dev/null;
+        then exec python -u /tmp/archiver.py;
+        else echo "WARNING: pinned download failed or hash mismatch; running installed copy"; exec python -u /app/archiver.py; fi
     environment:
       - TZ=America/New_York
       # Plans and reports only. Set to "false" (and bump the app version) to let it move files.
@@ -24,7 +34,7 @@ services:
       - KEEP_TAG=keep
       - RUN_AT=03:30
     volumes:
-      - ${APP_DATA_DIR}/app-0.2.1:/app:ro   # versioned: Umbrel updates do not overwrite existing app files
+      - ${APP_DATA_DIR}/app:/app:ro
       - ${APP_DATA_DIR}/data:/data
       # Read-only: lets it check hardlink counts, so it knows what a move really frees.
       - ${UMBREL_ROOT}/data/storage/downloads:/downloads:ro
